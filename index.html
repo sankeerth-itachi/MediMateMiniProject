@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .dark {
+      background-color: #18181b;
+      color: #e4e4e7;
+    }
+
+    #chat-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #chat-container::-webkit-scrollbar-track {
+      background: #27272a;
+    }
+
+    #chat-container::-webkit-scrollbar-thumb {
+      background-color: #52525b;
+      border-radius: 4px;
+    }
+
+    #message-input::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #message-input::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #message-input::-webkit-scrollbar-thumb {
+      background-color: #52525b;
+      border-radius: 3px;
+    }
+
+    /* Styles for markdown rendering */
+    .prose {
+      color: #e4e4e7;
+    }
+    .prose strong {
+      color: #fafafa;
+    }
+    .prose a {
+      color: #60a5fa;
+    }
+    .prose ul {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+    }
+    .prose ol {
+      list-style-type: decimal;
+      padding-left: 1.5rem;
+    }
+    .prose blockquote {
+      border-left: 4px solid #52525b;
+      padding-left: 1rem;
+      color: #a1a1aa;
+    }
+    .prose code {
+      background-color: #27272a;
+      color: #f4f4f5;
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+    }
+    .prose pre {
+      background-color: #27272a;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+    }
+    .prose table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .prose th, .prose td {
+      border: 1px solid #52525b;
+      padding: 0.5rem 1rem;
+    }
+    .prose thead {
+      background-color: #3f3f46;
+    }
+
+    .thinking-bubble::after {
+      content: ' .';
+      animation: thinking 1s steps(1, end) infinite;
+    }
+    @keyframes thinking {
+      0% { content: ' .' }
+      33% { content: ' ..' }
+      66% { content: ' ...' }
+    }
+  </style>
+</head>
+
+<body class="flex flex-col h-screen bg-zinc-900 text-zinc-200">
+
+  <!-- Header -->
+  <header class="bg-zinc-800/50 backdrop-blur-sm border-b border-zinc-700 p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-20">
+    <h1 class="text-xl font-bold text-zinc-50">Vision Chat</h1>
+    <div class="flex items-center gap-2">
+      <button id="newChatButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold transition-colors">New Chat</button>
+      <div class="relative">
+        <button id="menuButton" class="p-2 bg-zinc-700 hover:bg-zinc-600 rounded-md transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+          </svg>
+        </button>
+        <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1">
+          <a href="#" id="timeTableButton" class="block px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Time Table</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Chat Container -->
+  <main id="chat-container" class="flex-1 overflow-y-auto p-4 pt-24 pb-48 space-y-4">
+    <!-- Messages will be injected here -->
+  </main>
+
+  <!-- Footer Input Area -->
+  <footer class="bg-zinc-800/80 backdrop-blur-sm border-t border-zinc-700 p-4 fixed bottom-0 left-0 right-0">
+    <div class="max-w-4xl mx-auto">
+      <div id="image-preview-container" class="mb-2"></div>
+      <div class="flex items-end bg-zinc-700 rounded-xl p-2">
+        <button id="image-upload-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Upload Image">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+        </button>
+        <button id="visualize-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Visualize">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v2.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 6.586V4a1 1 0 011-1zM3 10a1 1 0 011-1h2.586l-1.293-1.293a1 1 0 111.414-1.414l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L6.586 11H4a1 1 0 01-1-1zm14 0a1 1 0 01-1 1h-2.586l1.293 1.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 111.414 1.414L13.414 9H16a1 1 0 011 1zm-3.707 5.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 111.414 1.414L13.414 15H16a1 1 0 110 2h-2.586l1.293 1.293z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <button id="fetch-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Fetch">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+             <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <textarea id="message-input" rows="1" class="flex-1 bg-transparent resize-none p-2 text-zinc-200 placeholder-zinc-400 focus:outline-none" placeholder="Ask me anything, or try /visualize, /fetch..."></textarea>
+        <input type="file" id="image-upload-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp">
+        <button id="send-button" class="p-2 bg-blue-600 text-white rounded-full disabled:bg-zinc-600 disabled:cursor-not-allowed transition-colors" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- New Chat Modal -->
+  <div id="newChatModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-sm w-full">
+      <h2 class="text-2xl font-bold mb-4">Start New Chat</h2>
+      <p class="text-zinc-400 mb-6">Do you want to carry over context from the previous conversation?</p>
+      <div class="flex justify-end gap-4">
+        <button id="startFreshButton" class="px-4 py-2 bg-zinc-600 hover:bg-zinc-700 rounded-md font-semibold transition-colors">Start Fresh</button>
+        <button id="startWithContextButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors">Use Context</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="flex flex-col items-center">
+       <svg class="animate-spin h-10 w-10 text-white mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <p class="text-lg font-semibold">Summarizing previous chat...</p>
+    </div>
+  </div>
+
+  <!-- Time Table Sidebar -->
+  <div id="timeTableSidebar" class="hidden fixed inset-0 z-40">
+    <div id="timeTableOverlay" class="absolute inset-0 bg-black/60"></div>
+    <div id="timeTableContent" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-zinc-900 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out">
+      <div class="p-6 h-full flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold">Time Table</h2>
+          <button id="closeTimeTableButton" class="p-2 rounded-full hover:bg-zinc-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="flex gap-2 mb-4">
+          <input type="text" id="taskInput" class="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Add a new task...">
+          <button id="addTaskButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold transition-colors">Add</button>
+        </div>
+        <ul id="taskList" class="flex-1 overflow-y-auto space-y-2">
+          <!-- Tasks will be injected here -->
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from "https://esm.run/@google/genai";
+
+    const chatContainer = document.getElementById('chat-container');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const imageUploadButton = document.getElementById('image-upload-button');
+    const imageUploadInput = document.getElementById('image-upload-input');
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const newChatButton = document.getElementById('newChatButton');
+    const newChatModal = document.getElementById('newChatModal');
+    const startFreshButton = document.getElementById('startFreshButton');
+    const startWithContextButton = document.getElementById('startWithContextButton');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const visualizeButton = document.getElementById('visualize-button');
+    const fetchButton = document.getElementById('fetch-button');
+    
+    // Time Table elements
+    const menuButton = document.getElementById('menuButton');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const timeTableButton = document.getElementById('timeTableButton');
+    const timeTableSidebar = document.getElementById('timeTableSidebar');
+    const timeTableOverlay = document.getElementById('timeTableOverlay');
+    const timeTableContent = document.getElementById('timeTableContent');
+    const closeTimeTableButton = document.getElementById('closeTimeTableButton');
+    const taskInput = document.getElementById('taskInput');
+    const addTaskButton = document.getElementById('addTaskButton');
+    const taskList = document.getElementById('taskList');
+
+    let ai;
+    let chatHistory = [];
+    let currentImageState = { base64: null, ocrText: null };
+    let messageCounter = 0;
+    let tasks = [];
+    
+    const safetySettings = [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    ];
+    
+    // --- Task Management / Time Table ---
+    
+    const loadTasks = () => {
+        const storedTasks = localStorage.getItem('tasks');
+        if (storedTasks) {
+            tasks = JSON.parse(storedTasks);
+        }
+        renderTasks();
+    };
+
+    const saveTasks = () => {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    };
+
+    const renderTasks = () => {
+        taskList.innerHTML = '';
+        tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            li.className = `flex items-center justify-between p-3 rounded-md transition-colors ${task.completed ? 'bg-zinc-800' : 'bg-zinc-700/50'}`;
+            li.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" data-index="${index}" class="task-checkbox h-5 w-5 rounded bg-zinc-800 border-zinc-600 text-blue-500 focus:ring-blue-500" ${task.completed ? 'checked' : ''}>
+                    <span class="flex-1 ${task.completed ? 'line-through text-zinc-500' : ''}">${task.text}</span>
+                </div>
+                <button data-index="${index}" class="delete-task-btn p-1 text-zinc-500 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            `;
+            taskList.appendChild(li);
+        });
+    };
+
+    const addTask = () => {
+        const text = taskInput.value.trim();
+        if (text) {
+            tasks.push({ text, completed: false });
+            taskInput.value = '';
+            saveTasks();
+            renderTasks();
+        }
+    };
+    
+    const toggleTask = (index) => {
+        tasks[index].completed = !tasks[index].completed;
+        saveTasks();
+        renderTasks();
+    };
+
+    const deleteTask = (index) => {
+        tasks.splice(index, 1);
+        saveTasks();
+        renderTasks();
+    };
+
+    // --- Core Chat Functions ---
+
+    const initializeChat = (systemInstruction = "") => {
+      try {
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        chatContainer.innerHTML = '';
+        chatHistory = [];
+
+        if (systemInstruction) {
+           chatHistory.push({ role: 'system', parts: [{ text: systemInstruction }] });
+           addMessage('assistant', `Continuing chat with context. ${systemInstruction}`);
+        } else {
+           addMessage('assistant', 'Hello! How can I help you today? You can ask me questions, upload images, or use commands like `/visualize` and `/fetch`.');
+        }
+
+        resetInputState();
+      } catch (error) {
+          console.error("Initialization failed:", error);
+          addMessage('assistant', 'Sorry, there was an error initializing the application. Please check the API key and refresh the page.');
+      }
+    };
+    
+    const startNewChat = async (useContext) => {
+      newChatModal.classList.add('hidden');
+      if (useContext && chatHistory.length > 0) {
+        loadingOverlay.classList.remove('hidden');
+        try {
+          const summaryPrompt = `Summarize the following conversation history in one or two sentences to use as context for a new conversation. Focus on the key topics and outcomes:\n\n${JSON.stringify(chatHistory)}`;
+          
+          const result = await ai.models.generateContent({
+             model: 'gemini-2.5-flash',
+             contents: summaryPrompt,
+          });
+          
+          initializeChat(`PREVIOUS_CONTEXT: ${result.text}`);
+        } catch (error) {
+          console.error('Error summarizing chat:', error);
+          addMessage('assistant', 'Sorry, I couldn\'t summarize the previous chat. Starting a fresh one.');
+          initializeChat();
+        } finally {
+          loadingOverlay.classList.add('hidden');
+        }
+      } else {
+        initializeChat();
+      }
+    };
+
+    const addMessage = (role, content, id = null) => {
+      const messageId = id || `msg-${messageCounter++}`;
+      const messageWrapper = document.createElement('div');
+      messageWrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+      const messageBubble = document.createElement('div');
+      messageBubble.id = messageId;
+      messageBubble.className = `max-w-xl lg:max-w-2xl p-4 rounded-2xl ${role === 'user' ? 'bg-blue-600 text-white rounded-br-lg' : 'bg-zinc-700 text-zinc-200 rounded-bl-lg'}`;
+
+      const proseDiv = document.createElement('div');
+      proseDiv.className = 'prose prose-invert';
+      proseDiv.innerHTML = content;
+
+      messageBubble.appendChild(proseDiv);
+      messageWrapper.appendChild(messageBubble);
+      chatContainer.appendChild(messageWrapper);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      return messageId;
+    };
+    
+    const updateMessage = (messageId, newContent) => {
+      const messageBubble = document.getElementById(messageId);
+      if (messageBubble) {
+        const proseDiv = messageBubble.querySelector('.prose');
+        proseDiv.innerHTML = newContent;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    };
+    
+    const handleImageUpload = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
+        currentImageState.base64 = base64String;
+
+        imagePreviewContainer.innerHTML = `
+          <div class="relative inline-block">
+            <img src="${reader.result}" class="h-16 w-16 object-cover rounded-md">
+            <button id="remove-image-btn" class="absolute -top-2 -right-2 bg-zinc-800 rounded-full p-1 text-white">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        `;
+
+        const statusId = addMessage('assistant', '🔍 Scanning image for text...');
+        Tesseract.recognize(reader.result, 'eng')
+          .then(({ data: { text } }) => {
+            currentImageState.ocrText = text;
+            updateMessage(statusId, '✅ Image scanned. Ask a question about it or send to describe.');
+          })
+          .catch(err => {
+            console.error(err);
+            currentImageState.ocrText = null;
+            updateMessage(statusId, '⚠️ Could not scan image for text.');
+          });
+
+        updateSendButtonState();
+      };
+      reader.readAsDataURL(file);
+    };
+
+    const handleSendMessage = async () => {
+      let userMessage = messageInput.value.trim();
+      if (!userMessage && !currentImageState.base64) return;
+      
+      const isVisualizeCommand = userMessage.startsWith('/visualize ');
+      const isFetchCommand = userMessage.startsWith('/fetch ');
+
+      let promptParts = [];
+      let displayContent = userMessage;
+
+      // Handle image part
+      if (currentImageState.base64) {
+        promptParts.push({ inlineData: { mimeType: 'image/jpeg', data: currentImageState.base64 } });
+        displayContent = `<img src="data:image/jpeg;base64,${currentImageState.base64}" class="rounded-lg max-h-64 mb-2">${displayContent}`;
+      }
+
+      // Handle text part
+      if (userMessage) {
+        if (currentImageState.ocrText) {
+          const contextualPrompt = `Based on the following context extracted from an image, please answer the user's question. If the question is not related to the context, say so. CONTEXT: '${currentImageState.ocrText}' --- QUESTION: '${userMessage}'`;
+          promptParts.push({ text: contextualPrompt });
+        } else if (isVisualizeCommand) {
+          promptParts.push({ text: userMessage.substring(11) });
+        } else if (isFetchCommand) {
+          promptParts.push({ text: userMessage.substring(7) });
+        }
+        else {
+          promptParts.push({ text: userMessage });
+        }
+      } else if (currentImageState.base64 && !userMessage) {
+         promptParts.push({ text: "Describe this image in detail." });
+      }
+      
+      addMessage('user', displayContent);
+      chatHistory.push({ role: 'user', parts: promptParts });
+      
+      const thinkingId = addMessage('assistant', '<span class="thinking-bubble">Thinking</span>');
+      resetInputState();
+      
+      try {
+        let result;
+        if (isVisualizeCommand) {
+           await generateVisualization(promptParts[0].text, thinkingId);
+           return;
+        }
+        if (isFetchCommand) {
+            await fetchAndDescribe(promptParts[0].text, thinkingId);
+            return;
+        }
+
+        const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash', safetySettings });
+        const chat = model.startChat({ history: chatHistory.slice(0, -1) });
+        const response = await chat.sendMessage(promptParts);
+        result = response.response.text();
+        
+        chatHistory.push({ role: 'model', parts: [{ text: result }] });
+        const formattedResponse = marked.parse(result);
+        updateMessage(thinkingId, formattedResponse);
+      } catch (error) {
+        console.error("API Error:", error);
+        updateMessage(thinkingId, `Sorry, something went wrong. ${error.message}`);
+      }
+    };
+    
+    const generateVisualization = async (prompt, messageId) => {
+        updateMessage(messageId, "🎨 Generating visualization...");
+        try {
+            const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash-image-preview' });
+            
+            const fullPrompt = `You are a creative visual AI. Generate an image based on the following user request.
+            **Strict Rules:**
+            - **Style:** The image MUST be minimalistic, simple, and clean. Use a modern, flat aesthetic.
+            - **Theme:** Do NOT assume any specific theme (like medicine) unless the user explicitly requests it. Keep it general and neutral.
+            - **Clarity:** Ensure the image is highly readable and easy to understand.
+            - **Colors:** Do NOT use neon colors. Use a professional and calm color palette.
+            - **Spelling:** All text included in the image must be spelled correctly.
+
+            **User Request:** "${prompt}"`;
+
+            const result = await model.generateContent({
+                contents: [{
+                    parts: [{ text: fullPrompt }]
+                }],
+                config: {
+                    responseModalities: [Modality.IMAGE, Modality.TEXT],
+                },
+            });
+            
+            let htmlResponse = "";
+            let imageGenerated = false;
+            for (const part of result.response.candidates[0].content.parts) {
+                if (part.text) {
+                    htmlResponse += marked.parse(part.text);
+                } else if (part.inlineData) {
+                    imageGenerated = true;
+                    const base64ImageBytes = part.inlineData.data;
+                    const imageUrl = `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
+                    htmlResponse += `<img src="${imageUrl}" class="rounded-lg max-w-full" alt="Generated visualization">`;
+                }
+            }
+
+            if (!imageGenerated) {
+                htmlResponse = "The model chose not to generate an image for this prompt.";
+            }
+
+            chatHistory.push({ role: 'model', parts: [{ text: `[Generated Image for: ${prompt}] ${htmlResponse}` }] });
+            updateMessage(messageId, htmlResponse);
+
+        } catch (error) {
+            console.error("Visualization Generation Error:", error);
+            updateMessage(messageId, `Sorry, something went wrong during visualization. ${error.toString()}`);
+        }
+    };
+
+    const fetchAndDescribe = async (prompt, messageId) => {
+        updateMessage(messageId, `🔍 Searching for information on "${prompt}"...`);
+        try {
+            // Step 1: Search the web for a description
+            const searchModel = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const result = await searchModel.generateContent({
+                contents: `Find factual information and generate a detailed visual description for a minimalistic and simple diagram about: "${prompt}". Also include a concise text explanation.`,
+                config: {
+                    tools: [{ googleSearch: {} }],
+                },
+            });
+
+            const description = result.response.text();
+            const groundingChunks = result.response.candidates[0]?.groundingMetadata?.groundingChunks || [];
+            
+            chatHistory.push({ role: 'model', parts: [{ text: description }] });
+            
+            let htmlResponse = marked.parse(description);
+
+            if (groundingChunks.length > 0) {
+                htmlResponse += '<div class="mt-4 pt-2 border-t border-zinc-600 text-sm"><p class="font-semibold mb-1">Sources:</p><ul class="list-disc pl-5">';
+                groundingChunks.forEach(chunk => {
+                    if (chunk.web) {
+                        htmlResponse += `<li><a href="${chunk.web.uri}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${chunk.web.title}</a></li>`;
+                    }
+                });
+                htmlResponse += '</ul></div>';
+            }
+            
+            updateMessage(messageId, htmlResponse);
+
+        } catch (error) {
+            console.error("Fetch and Describe Error:", error);
+            updateMessage(messageId, `Sorry, something went wrong while fetching information. ${error.message}`);
+        }
+    };
+
+
+    const resetInputState = () => {
+      messageInput.value = '';
+      currentImageState = { base64: null, ocrText: null };
+      imagePreviewContainer.innerHTML = '';
+      if (document.getElementById('image-upload-input')) {
+        document.getElementById('image-upload-input').value = '';
+      }
+      autosizeInput();
+      updateSendButtonState();
+    };
+
+    const autosizeInput = () => {
+      messageInput.style.height = 'auto';
+      messageInput.style.height = (messageInput.scrollHeight) + 'px';
+    };
+
+    const updateSendButtonState = () => {
+      sendButton.disabled = !messageInput.value.trim() && !currentImageState.base64;
+    };
+    
+    // --- Event Listeners ---
+    sendButton.addEventListener('click', handleSendMessage);
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    });
+
+    messageInput.addEventListener('input', () => {
+      autosizeInput();
+      updateSendButtonState();
+    });
+
+    imageUploadButton.addEventListener('click', () => imageUploadInput.click());
+    imageUploadInput.addEventListener('change', handleImageUpload);
+
+    imagePreviewContainer.addEventListener('click', (e) => {
+      if (e.target.closest('#remove-image-btn')) {
+        resetInputState();
+      }
+    });
+
+    newChatButton.addEventListener('click', () => newChatModal.classList.remove('hidden'));
+    startFreshButton.addEventListener('click', () => startNewChat(false));
+    startWithContextButton.addEventListener('click', () => startNewChat(true));
+    newChatModal.addEventListener('click', (e) => {
+      if (e.target === newChatModal) newChatModal.classList.add('hidden');
+    });
+
+    visualizeButton.addEventListener('click', () => {
+        messageInput.value = '/visualize ';
+        messageInput.focus();
+        updateSendButtonState();
+    });
+    
+    fetchButton.addEventListener('click', () => {
+        messageInput.value = '/fetch ';
+        messageInput.focus();
+        updateSendButtonState();
+    });
+    
+    // Time Table Listeners
+    menuButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdownMenu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+      if (!dropdownMenu.classList.contains('hidden')) {
+        dropdownMenu.classList.add('hidden');
+      }
+    });
+
+    timeTableButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      timeTableSidebar.classList.remove('hidden');
+      setTimeout(() => {
+        timeTableContent.classList.remove('translate-x-full');
+      }, 10);
+    });
+
+    const closeSidebar = () => {
+      timeTableContent.classList.add('translate-x-full');
+      setTimeout(() => {
+        timeTableSidebar.classList.add('hidden');
+      }, 300);
+    };
+
+    closeTimeTableButton.addEventListener('click', closeSidebar);
+    timeTableOverlay.addEventListener('click', closeSidebar);
+
+    addTaskButton.addEventListener('click', addTask);
+    taskInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            addTask();
+        }
+    });
+    
+    taskList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('task-checkbox')) {
+            toggleTask(e.target.dataset.index);
+        }
+        if (e.target.closest('.delete-task-btn')) {
+            deleteTask(e.target.closest('.delete-task-btn').dataset.index);
+        }
+    });
+
+
+    // --- App Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeChat();
+      loadTasks();
+    });
+  </script>
+</body>
+</html>
