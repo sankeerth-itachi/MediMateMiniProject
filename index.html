@@ -334,12 +334,12 @@
         try {
           const summaryPrompt = `Summarize the following conversation history in one or two sentences to use as context for a new conversation. Focus on the key topics and outcomes:\n\n${JSON.stringify(chatHistory)}`;
           
-          const result = await ai.models.generateContent({
+          const response = await ai.models.generateContent({
              model: 'gemini-2.5-flash',
              contents: summaryPrompt,
           });
           
-          initializeChat(`PREVIOUS_CONTEXT: ${result.text}`);
+          initializeChat(`PREVIOUS_CONTEXT: ${response.text}`);
         } catch (error) {
           console.error('Error summarizing chat:', error);
           addMessage('assistant', 'Sorry, I couldn\'t summarize the previous chat. Starting a fresh one.');
@@ -456,7 +456,6 @@
       resetInputState();
       
       try {
-        let result;
         if (isVisualizeCommand) {
            await generateVisualization(promptParts[0].text, thinkingId);
            return;
@@ -466,14 +465,17 @@
             return;
         }
 
-        const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash', safetySettings });
-        const chat = model.startChat({ history: chatHistory.slice(0, -1) });
-        const response = await chat.sendMessage(promptParts);
-        result = response.response.text();
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: chatHistory,
+          safetySettings,
+        });
         
-        chatHistory.push({ role: 'model', parts: [{ text: result }] });
-        const formattedResponse = marked.parse(result);
+        const resultText = response.text;
+        chatHistory.push({ role: 'model', parts: [{ text: resultText }] });
+        const formattedResponse = marked.parse(resultText);
         updateMessage(thinkingId, formattedResponse);
+
       } catch (error) {
         console.error("API Error:", error);
         updateMessage(thinkingId, `Sorry, something went wrong. ${error.message}`);
@@ -483,8 +485,6 @@
     const generateVisualization = async (prompt, messageId) => {
         updateMessage(messageId, "🎨 Generating visualization...");
         try {
-            const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash-image-preview' });
-            
             const fullPrompt = `You are a creative visual AI. Generate an image based on the following user request.
             **Strict Rules:**
             - **Style:** The image MUST be minimalistic, simple, and clean. Use a modern, flat aesthetic.
@@ -495,10 +495,9 @@
 
             **User Request:** "${prompt}"`;
 
-            const result = await model.generateContent({
-                contents: [{
-                    parts: [{ text: fullPrompt }]
-                }],
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image-preview',
+                contents: { parts: [{ text: fullPrompt }] },
                 config: {
                     responseModalities: [Modality.IMAGE, Modality.TEXT],
                 },
@@ -506,7 +505,7 @@
             
             let htmlResponse = "";
             let imageGenerated = false;
-            for (const part of result.response.candidates[0].content.parts) {
+            for (const part of response.candidates[0].content.parts) {
                 if (part.text) {
                     htmlResponse += marked.parse(part.text);
                 } else if (part.inlineData) {
@@ -534,16 +533,16 @@
         updateMessage(messageId, `🔍 Searching for information on "${prompt}"...`);
         try {
             // Step 1: Search the web for a description
-            const searchModel = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
-            const result = await searchModel.generateContent({
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
                 contents: `Find factual information and generate a detailed visual description for a minimalistic and simple diagram about: "${prompt}". Also include a concise text explanation.`,
                 config: {
                     tools: [{ googleSearch: {} }],
                 },
             });
 
-            const description = result.response.text();
-            const groundingChunks = result.response.candidates[0]?.groundingMetadata?.groundingChunks || [];
+            const description = response.text;
+            const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
             
             chatHistory.push({ role: 'model', parts: [{ text: description }] });
             
