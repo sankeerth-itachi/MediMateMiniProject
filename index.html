@@ -16,8 +16,21 @@
 
 <body class="bg-zinc-900 text-zinc-200">
 
+  <!-- API Key Modal -->
+  <div id="apiKeyModal" class="hidden fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50 p-4">
+    <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-md w-full">
+      <h2 class="text-2xl font-bold mb-4 text-center">Enter Your Gemini API Key</h2>
+      <p class="text-zinc-400 mb-6 text-center">To use Medimate, please provide your Google AI Gemini API key. Your key is stored only in your browser for this session.</p>
+      <div class="mb-6">
+          <input type="password" id="apiKeyInput" class="w-full bg-zinc-700 border border-zinc-600 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter your API key here...">
+      </div>
+      <button id="saveApiKeyButton" class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors">Save and Start Chatting</button>
+       <p class="text-xs text-zinc-500 mt-4 text-center">Don't have a key? Get one from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 hover:underline">Google AI Studio</a>.</p>
+    </div>
+  </div>
+
   <!-- Landing Page -->
-  <div id="landing-page" class="h-screen w-full flex flex-col items-center justify-center text-center p-4 transition-opacity duration-700 ease-in-out">
+  <div id="landing-page" class="hidden h-screen w-full flex flex-col items-center justify-center text-center p-4 transition-opacity duration-700 ease-in-out">
     <div class="landing-content">
       <h1 class="text-7xl md:text-9xl font-black mb-8 tracking-tighter landing-title">Medimate</h1>
       <button id="get-started-btn" class="text-xl font-semibold px-10 py-4 rounded-full get-started-btn">

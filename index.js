@@ -1,6 +1,9 @@
 import { GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from "https://esm.run/@google/genai";
 
-// App Containers
+// App State Containers
+const apiKeyModal = document.getElementById('apiKeyModal');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const saveApiKeyButton = document.getElementById('saveApiKeyButton');
 const landingPage = document.getElementById('landing-page');
 const getStartedBtn = document.getElementById('get-started-btn');
 const appContainer = document.getElementById('app-container');
@@ -213,9 +216,9 @@ const showTimeUpModal = (taskName, index) => {
 
 // --- Core Chat Functions ---
 
-const initializeChat = (systemInstruction = "") => {
+const initializeChat = (apiKey, systemInstruction = "") => {
   try {
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    ai = new GoogleGenAI({ apiKey: apiKey });
     chatContainer.innerHTML = '';
     chatHistory = [];
     currentSystemInstruction = systemInstruction || null;
@@ -227,13 +230,27 @@ const initializeChat = (systemInstruction = "") => {
     }
 
     resetInputState();
+    return true; // Indicate success
   } catch (error) {
       console.error("Initialization failed:", error);
-      addMessage('assistant', 'Sorry, there was an an error initializing the application. Please check the API key and refresh the page.');
+      sessionStorage.removeItem('geminiApiKey'); // Clear bad key
+      apiKeyModal.classList.remove('hidden');
+      landingPage.classList.add('hidden');
+      appContainer.classList.add('hidden');
+      const keyInput = document.getElementById('apiKeyInput');
+      keyInput.value = '';
+      keyInput.placeholder = "Invalid API Key. Please try again.";
+      keyInput.classList.add('border-red-500', 'placeholder-red-400');
+      return false; // Indicate failure
   }
 };
 
 const startNewChat = async (useContext) => {
+  const apiKey = sessionStorage.getItem('geminiApiKey');
+  if (!apiKey) {
+      apiKeyModal.classList.remove('hidden');
+      return;
+  }
   newChatModal.classList.add('hidden');
   if (useContext && chatHistory.length > 0) {
     loadingOverlay.classList.remove('hidden');
@@ -245,16 +262,16 @@ const startNewChat = async (useContext) => {
          contents: summaryPrompt,
       });
       
-      initializeChat(`PREVIOUS_CONTEXT: ${response.text}`);
+      initializeChat(apiKey, `PREVIOUS_CONTEXT: ${response.text}`);
     } catch (error) {
       console.error('Error summarizing chat:', error);
       addMessage('assistant', 'Sorry, I couldn\'t summarize the previous chat. Starting a fresh one.');
-      initializeChat();
+      initializeChat(apiKey);
     } finally {
       loadingOverlay.classList.add('hidden');
     }
   } else {
-    initializeChat();
+    initializeChat(apiKey);
   }
 };
 
@@ -669,6 +686,24 @@ const showApp = () => {
 
 getStartedBtn.addEventListener('click', showApp);
 
+saveApiKeyButton.addEventListener('click', () => {
+    const apiKeyInputEl = document.getElementById('apiKeyInput');
+    const apiKey = apiKeyInputEl.value.trim();
+    if (apiKey) {
+        apiKeyInputEl.classList.remove('border-red-500', 'placeholder-red-400');
+        const success = initializeChat(apiKey);
+        if (success) {
+            sessionStorage.setItem('geminiApiKey', apiKey);
+            apiKeyModal.classList.add('hidden');
+            landingPage.classList.remove('hidden');
+        }
+    } else {
+        apiKeyInputEl.placeholder = "API Key cannot be empty!";
+        apiKeyInputEl.classList.add('border-red-500', 'placeholder-red-400');
+    }
+});
+
+
 sendButton.addEventListener('click', handleSendMessage);
 messageInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -825,6 +860,20 @@ timeUpModal.addEventListener('click', (e) => {
 
 // --- App Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-  initializeChat();
-  loadTasks();
+    loadTasks(); // Load tasks regardless of API key state
+    const storedApiKey = sessionStorage.getItem('geminiApiKey');
+    
+    if (storedApiKey) {
+        const success = initializeChat(storedApiKey);
+        if (success) {
+            apiKeyModal.classList.add('hidden');
+            landingPage.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+        }
+        // if !success, initializeChat already showed the modal
+    } else {
+        apiKeyModal.classList.remove('hidden');
+        landingPage.classList.add('hidden');
+        appContainer.classList.add('hidden');
+    }
 });
