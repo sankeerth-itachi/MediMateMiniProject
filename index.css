@@ -1,0 +1,91 @@
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.dark {
+  background-color: #18181b;
+  color: #e4e4e7;
+}
+
+#chat-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+#chat-container::-webkit-scrollbar-track {
+  background: #27272a;
+}
+
+#chat-container::-webkit-scrollbar-thumb {
+  background-color: #52525b;
+  border-radius: 4px;
+}
+
+#message-input::-webkit-scrollbar {
+  width: 6px;
+}
+
+#message-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#message-input::-webkit-scrollbar-thumb {
+  background-color: #52525b;
+  border-radius: 3px;
+}
+
+/* Styles for markdown rendering */
+.prose {
+  color: #e4e4e7;
+}
+.prose strong {
+  color: #fafafa;
+}
+.prose a {
+  color: #60a5fa;
+}
+.prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+.prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+.prose blockquote {
+  border-left: 4px solid #52525b;
+  padding-left: 1rem;
+  color: #a1a1aa;
+}
+.prose code {
+  background-color: #27272a;
+  color: #f4f4f5;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+}
+.prose pre {
+  background-color: #27272a;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.prose th, .prose td {
+  border: 1px solid #52525b;
+  padding: 0.5rem 1rem;
+}
+.prose thead {
+  background-color: #3f3f46;
+}
+
+.thinking-bubble::after {
+  content: ' .';
+  animation: thinking 1s steps(1, end) infinite;
+}
+@keyframes thinking {
+  0% { content: ' .' }
+  33% { content: ' ..' }
+  66% { content: ' ...' }
+}
