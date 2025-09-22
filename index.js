@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from "https://esm.run/@google/genai";
 
 // App State Containers
@@ -68,6 +69,60 @@ const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
+
+// --- API Error Handler ---
+const handleApiError = (error, messageId = null) => {
+    console.error("API Error:", error);
+    const errorMessage = error.toString();
+
+    // Check for a specific API key invalid error.
+    if (errorMessage.includes('API_KEY_INVALID') || errorMessage.includes('API key not valid')) {
+        sessionStorage.removeItem('geminiApiKey');
+        
+        // Reset the entire UI to the API key modal state.
+        apiKeyModal.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+        landingPage.classList.add('hidden');
+        
+        const keyInput = document.getElementById('apiKeyInput');
+        keyInput.value = '';
+        keyInput.placeholder = "Your API Key is invalid. Please enter a new one.";
+        keyInput.classList.add('border-red-500', 'placeholder-red-400');
+        
+        // If we were in the middle of generating a response, remove the placeholder.
+        if (messageId) {
+             const messageBubble = document.getElementById(messageId);
+             if (messageBubble && messageBubble.parentElement) {
+                messageBubble.parentElement.remove();
+             }
+        }
+        return; // Stop execution to prevent further errors.
+    }
+
+    // Handle other API errors by displaying a friendly message.
+    let friendlyMessage = 'Sorry, something went wrong. Please try again.';
+    try {
+        // Google AI errors are often a stringified JSON. We can try to parse a better message.
+        const errorJsonString = errorMessage.substring(errorMessage.indexOf('{'));
+        const errorBody = JSON.parse(errorJsonString);
+        if (errorBody.error && errorBody.error.message) {
+            friendlyMessage = `An error occurred: ${errorBody.error.message}`;
+        }
+    } catch (e) {
+        // If parsing fails, fall back to the original error message.
+        if (error.message) {
+           friendlyMessage = `Sorry, an error occurred: ${error.message}`;
+        }
+    }
+    
+    // Update the UI with the error message.
+    if (messageId) {
+        updateMessage(messageId, friendlyMessage);
+    } else {
+        addMessage('assistant', friendlyMessage);
+    }
+};
+
 
 // --- Sound Helper ---
 const playSound = (audioElement) => {
@@ -264,9 +319,13 @@ const startNewChat = async (useContext) => {
       
       initializeChat(apiKey, `PREVIOUS_CONTEXT: ${response.text}`);
     } catch (error) {
-      console.error('Error summarizing chat:', error);
-      addMessage('assistant', 'Sorry, I couldn\'t summarize the previous chat. Starting a fresh one.');
-      initializeChat(apiKey);
+      handleApiError(error);
+      // If the error was not an API key error, the user is still in the app.
+      // We should tell them we're starting a fresh chat.
+      if (apiKeyModal.classList.contains('hidden')) {
+          addMessage('assistant', 'Sorry, I couldn\'t summarize the previous chat. Starting a fresh one.');
+          initializeChat(apiKey);
+      }
     } finally {
       loadingOverlay.classList.add('hidden');
     }
@@ -481,12 +540,7 @@ const handleSendMessage = async () => {
     }
 
   } catch (error) {
-    console.error("API Error:", error);
-    let friendlyMessage = 'Sorry, something went wrong. Please try again.';
-    if (error.message) {
-        friendlyMessage = `Sorry, an error occurred: ${error.message}`;
-    }
-    updateMessage(thinkingId, friendlyMessage);
+    handleApiError(error, thinkingId);
   }
 };
 
@@ -532,8 +586,7 @@ const generateVisualization = async (prompt, messageId) => {
         updateMessage(messageId, htmlResponse, true);
 
     } catch (error) {
-        console.error("Visualization Generation Error:", error);
-        updateMessage(messageId, `Sorry, something went wrong during visualization. ${error.toString()}`);
+        handleApiError(error, messageId);
     }
 };
 
@@ -569,8 +622,7 @@ const fetchAndDescribe = async (prompt, messageId) => {
         updateMessage(messageId, htmlResponse, true);
 
     } catch (error) {
-        console.error("Fetch and Describe Error:", error);
-        updateMessage(messageId, `Sorry, something went wrong while fetching information. ${error.message}`);
+        handleApiError(error, messageId);
     }
 };
 
@@ -645,8 +697,7 @@ const generateFlowchart = async (prompt, messageId) => {
         }
 
     } catch (error) {
-        console.error("Flowchart Generation Error:", error);
-        updateMessage(messageId, `Sorry, something went wrong while generating the flowchart. ${error.message}`);
+        handleApiError(error, messageId);
     }
 };
 
