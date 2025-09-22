@@ -8,162 +8,175 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
   <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="index.css">
 </head>
 
-<body class="flex flex-col h-screen bg-zinc-900 text-zinc-200">
+<body class="bg-zinc-900 text-zinc-200">
 
-  <!-- Header -->
-  <header class="bg-zinc-800/50 backdrop-blur-sm border-b border-zinc-700 p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-20">
-    <h1 class="text-xl font-bold text-zinc-50">Medimate</h1>
-    <div class="flex items-center gap-2">
-      <button id="newChatButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold transition-colors">New Chat</button>
-      <div class="relative">
-        <button id="menuButton" class="p-2 bg-zinc-700 hover:bg-zinc-600 rounded-md transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-          </svg>
-        </button>
-        <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1">
-          <a href="#" id="timeTableButton" class="block px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Time Table</a>
+  <!-- Landing Page -->
+  <div id="landing-page" class="h-screen w-full flex flex-col items-center justify-center text-center p-4 transition-opacity duration-700 ease-in-out">
+    <div class="landing-content">
+      <h1 class="text-7xl md:text-9xl font-black mb-8 tracking-tighter landing-title">Medimate</h1>
+      <button id="get-started-btn" class="text-xl font-semibold px-10 py-4 rounded-full get-started-btn">
+        Get Started &rarr;
+      </button>
+    </div>
+  </div>
+  
+  <!-- Main App Container -->
+  <div id="app-container" class="hidden h-screen flex flex-col transition-opacity duration-500 ease-in-out opacity-0">
+    <!-- Header -->
+    <header class="bg-zinc-800/50 backdrop-blur-sm border-b border-zinc-700 p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-20">
+      <h1 class="text-xl font-bold text-zinc-50">Medimate</h1>
+      <div class="flex items-center gap-2">
+        <button id="newChatButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold transition-colors">New Chat</button>
+        <div class="relative">
+          <button id="menuButton" class="p-2 bg-zinc-700 hover:bg-zinc-600 rounded-md transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+          </button>
+          <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1">
+            <a href="#" id="timeTableButton" class="block px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Time Table</a>
+          </div>
         </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Main Chat Container -->
-  <main id="chat-container" class="flex-1 overflow-y-auto p-4 pt-24 pb-48 space-y-4">
-    <!-- Messages will be injected here -->
-  </main>
+    <!-- Main Chat Container -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 pt-24 pb-48 space-y-4">
+      <!-- Messages will be injected here -->
+    </main>
 
-  <!-- Footer Input Area -->
-  <footer class="bg-zinc-800/80 backdrop-blur-sm border-t border-zinc-700 p-4 fixed bottom-0 left-0 right-0">
-    <div class="max-w-4xl mx-auto">
-      <div id="image-preview-container" class="mb-2"></div>
-      <div class="flex items-end bg-zinc-700 rounded-xl p-2">
-        <button id="image-upload-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Upload Image">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-          </svg>
-        </button>
-        <button id="visualize-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Visualize">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v2.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 6.586V4a1 1 0 011-1zM3 10a1 1 0 011-1h2.586l-1.293-1.293a1 1 0 111.414-1.414l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L6.586 11H4a1 1 0 01-1-1zm14 0a1 1 0 01-1 1h-2.586l1.293 1.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 111.414 1.414L13.414 9H16a1 1 0 011 1zm-3.707 5.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 111.414 1.414L13.414 15H16a1 1 0 110 2h-2.586l1.293 1.293z" clip-rule="evenodd" />
-          </svg>
-        </button>
-        <button id="fetch-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Fetch">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-             <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-          </svg>
-        </button>
-        <button id="design-flow-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Design Flow">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 2zM5.105 4.83a.75.75 0 011.06-.053l2.25 2.5a.75.75 0 01-1.114 1.006l-2.25-2.5a.75.75 0 01.054-1.06zm9.844-.054a.75.75 0 01.053 1.06l-2.25 2.5a.75.75 0 01-1.114-1.006l2.25-2.5a.75.75 0 011.06.053zM3 10a.75.75 0 01.75-.75h3.5a.75.75 0 010 1.5h-3.5A.75.75 0 013 10zm13.25 0a.75.75 0 010 1.5h-3.5a.75.75 0 010-1.5h3.5zM10 18a.75.75 0 01-.75-.75v-3.5a.75.75 0 011.5 0v3.5A.75.75 0 0110 18zm-4.895-4.83a.75.75 0 01-1.06.053l-2.25-2.5a.75.75 0 011.114-1.006l2.25 2.5a.75.75 0 01-.053 1.06zm9.844.054a.75.75 0 01-.053-1.06l2.25-2.5a.75.75 0 011.114 1.006l-2.25 2.5a.75.75 0 01-1.06.053z" clip-rule="evenodd" />
-          </svg>
-        </button>
-        <textarea id="message-input" rows="1" class="flex-1 bg-transparent resize-none p-2 text-zinc-200 placeholder-zinc-400 focus:outline-none" placeholder="Ask me anything, or try /visualize, /fetch, /designFlow..."></textarea>
-        <input type="file" id="image-upload-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image-webp">
-        <button id="send-button" class="p-2 bg-blue-600 text-white rounded-full disabled:bg-zinc-600 disabled:cursor-not-allowed transition-colors" disabled>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </footer>
-
-  <!-- New Chat Modal -->
-  <div id="newChatModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-sm w-full">
-      <h2 class="text-2xl font-bold mb-4">Start New Chat</h2>
-      <p class="text-zinc-400 mb-6">Do you want to carry over context from the previous conversation?</p>
-      <div class="flex justify-end gap-4">
-        <button id="startFreshButton" class="px-4 py-2 bg-zinc-600 hover:bg-zinc-700 rounded-md font-semibold transition-colors">Start Fresh</button>
-        <button id="startWithContextButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors">Use Context</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="flex flex-col items-center">
-       <svg class="animate-spin h-10 w-10 text-white mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <p class="text-lg font-semibold">Summarizing previous chat...</p>
-    </div>
-  </div>
-
-  <!-- Time Table Sidebar -->
-  <div id="timeTableSidebar" class="hidden fixed inset-0 z-40">
-    <div id="timeTableOverlay" class="absolute inset-0 bg-black/60"></div>
-    <div id="timeTableContent" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-zinc-900 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out">
-      <div class="p-6 h-full flex flex-col">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold">Time Table</h2>
-          <button id="closeTimeTableButton" class="p-2 rounded-full hover:bg-zinc-800">
+    <!-- Footer Input Area -->
+    <footer class="bg-zinc-800/80 backdrop-blur-sm border-t border-zinc-700 p-4 fixed bottom-0 left-0 right-0">
+      <div class="max-w-4xl mx-auto">
+        <div id="image-preview-container" class="mb-2"></div>
+        <div class="flex items-end bg-zinc-700 rounded-xl p-2">
+          <button id="image-upload-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Upload Image">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+          </button>
+          <button id="visualize-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Visualize">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v2.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 6.586V4a1 1 0 011-1zM3 10a1 1 0 011-1h2.586l-1.293-1.293a1 1 0 111.414-1.414l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L6.586 11H4a1 1 0 01-1-1zm14 0a1 1 0 01-1 1h-2.586l1.293 1.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 111.414 1.414L13.414 9H16a1 1 0 011 1zm-3.707 5.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 111.414 1.414L13.414 15H16a1 1 0 110 2h-2.586l1.293 1.293z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <button id="fetch-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Fetch">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+               <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <button id="design-flow-button" class="p-2 text-zinc-400 hover:text-zinc-200 transition-colors rounded-full hover:bg-zinc-600" aria-label="Design Flow">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 2zM5.105 4.83a.75.75 0 011.06-.053l2.25 2.5a.75.75 0 01-1.114 1.006l-2.25-2.5a.75.75 0 01.054-1.06zm9.844-.054a.75.75 0 01.053 1.06l-2.25 2.5a.75.75 0 01-1.114-1.006l2.25-2.5a.75.75 0 011.06.053zM3 10a.75.75 0 01.75-.75h3.5a.75.75 0 010 1.5h-3.5A.75.75 0 013 10zm13.25 0a.75.75 0 010 1.5h-3.5a.75.75 0 010-1.5h3.5zM10 18a.75.75 0 01-.75-.75v-3.5a.75.75 0 011.5 0v3.5A.75.75 0 0110 18zm-4.895-4.83a.75.75 0 01-1.06.053l-2.25-2.5a.75.75 0 011.114-1.006l2.25 2.5a.75.75 0 01-.053 1.06zm9.844.054a.75.75 0 01-.053-1.06l2.25-2.5a.75.75 0 011.114 1.006l-2.25 2.5a.75.75 0 01-1.06.053z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <textarea id="message-input" rows="1" class="flex-1 bg-transparent resize-none p-2 text-zinc-200 placeholder-zinc-400 focus:outline-none" placeholder="Ask me anything, or try /visualize, /fetch, /designFlow..."></textarea>
+          <input type="file" id="image-upload-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image-webp">
+          <button id="send-button" class="p-2 bg-blue-600 text-white rounded-full disabled:bg-zinc-600 disabled:cursor-not-allowed transition-colors" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
           </button>
         </div>
-        <div class="flex gap-2 mb-4">
-          <input type="text" id="taskInput" class="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Add a new task...">
-          <button id="addTaskButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold transition-colors">Add</button>
+      </div>
+    </footer>
+
+    <!-- New Chat Modal -->
+    <div id="newChatModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-sm w-full">
+        <h2 class="text-2xl font-bold mb-4">Start New Chat</h2>
+        <p class="text-zinc-400 mb-6">Do you want to carry over context from the previous conversation?</p>
+        <div class="flex justify-end gap-4">
+          <button id="startFreshButton" class="px-4 py-2 bg-zinc-600 hover:bg-zinc-700 rounded-md font-semibold transition-colors">Start Fresh</button>
+          <button id="startWithContextButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors">Use Context</button>
         </div>
-        <ul id="taskList" class="flex-1 overflow-y-auto space-y-2">
-          <!-- Tasks will be injected here -->
-        </ul>
       </div>
     </div>
-  </div>
 
-  <!-- Timer Modal -->
-  <div id="timerModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-sm w-full">
-      <h2 class="text-2xl font-bold mb-2">Set Timer</h2>
-      <p id="timerTaskName" class="text-zinc-400 mb-6"></p>
-      <div class="mb-6">
-          <label for="timerInput" class="block text-sm font-medium text-zinc-300 mb-2">Duration (minutes)</label>
-          <input type="number" id="timerInput" min="1" class="w-full bg-zinc-700 border border-zinc-600 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 25">
-      </div>
-      <div class="flex justify-end gap-4">
-        <button id="cancelTimerButton" class="px-4 py-2 bg-zinc-600 hover:bg-zinc-700 rounded-md font-semibold transition-colors">Cancel</button>
-        <button id="startTimerButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors">Start</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Time's Up Modal -->
-  <div id="timeUpModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-sm w-full text-center">
-      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-500 mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="flex flex-col items-center">
+         <svg class="animate-spin h-10 w-10 text-white mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-      </div>
-      <h2 class="text-2xl font-bold mb-2">Time's Up!</h2>
-      <p id="timeUpTaskName" class="text-zinc-400 mb-6"></p>
-      <div class="flex justify-center gap-4">
-        <button id="addMoreTimeButton" class="px-4 py-2 bg-zinc-600 hover:bg-zinc-700 rounded-md font-semibold transition-colors flex-1">Add More Time</button>
-        <button id="completeTaskButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors flex-1">Completed</button>
+        <p class="text-lg font-semibold">Summarizing previous chat...</p>
       </div>
     </div>
-  </div>
 
-  <!-- Active Timer Pop-up -->
-  <div id="activeTimerPopup" class="hidden fixed bottom-24 right-4 bg-zinc-700/90 backdrop-blur-sm border border-zinc-600 rounded-lg p-3 shadow-lg w-48 text-sm z-30 transition-opacity duration-300">
-    <p id="popupTaskName" class="text-zinc-300 font-semibold truncate"></p>
-    <p id="popupTimeLeft" class="text-amber-400 font-mono text-2xl tabular-nums"></p>
-  </div>
+    <!-- Time Table Sidebar -->
+    <div id="timeTableSidebar" class="hidden fixed inset-0 z-40">
+      <div id="timeTableOverlay" class="absolute inset-0 bg-black/60"></div>
+      <div id="timeTableContent" class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-zinc-900 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="p-6 h-full flex flex-col">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Time Table</h2>
+            <button id="closeTimeTableButton" class="p-2 rounded-full hover:bg-zinc-800">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="flex gap-2 mb-4">
+            <input type="text" id="taskInput" class="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Add a new task...">
+            <button id="addTaskButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold transition-colors">Add</button>
+          </div>
+          <ul id="taskList" class="flex-1 overflow-y-auto space-y-2">
+            <!-- Tasks will be injected here -->
+          </ul>
+        </div>
+      </div>
+    </div>
 
-  <!-- Audio Elements -->
-  <audio id="taskCompleteSound" src="https://cdn.jsdelivr.net/npm/ion-sound@3.0.7/sounds/snap.mp3" preload="auto"></audio>
-  <audio id="timerFinishedSound" src="https://cdn.jsdelivr.net/npm/ion-sound@3.0.7/sounds/bell_ring.mp3" preload="auto"></audio>
+    <!-- Timer Modal -->
+    <div id="timerModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-sm w-full">
+        <h2 class="text-2xl font-bold mb-2">Set Timer</h2>
+        <p id="timerTaskName" class="text-zinc-400 mb-6"></p>
+        <div class="mb-6">
+            <label for="timerInput" class="block text-sm font-medium text-zinc-300 mb-2">Duration (minutes)</label>
+            <input type="number" id="timerInput" min="1" class="w-full bg-zinc-700 border border-zinc-600 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 25">
+        </div>
+        <div class="flex justify-end gap-4">
+          <button id="cancelTimerButton" class="px-4 py-2 bg-zinc-600 hover:bg-zinc-700 rounded-md font-semibold transition-colors">Cancel</button>
+          <button id="startTimerButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time's Up Modal -->
+    <div id="timeUpModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-zinc-800 rounded-lg p-8 shadow-xl max-w-sm w-full text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold mb-2">Time's Up!</h2>
+        <p id="timeUpTaskName" class="text-zinc-400 mb-6"></p>
+        <div class="flex justify-center gap-4">
+          <button id="addMoreTimeButton" class="px-4 py-2 bg-zinc-600 hover:bg-zinc-700 rounded-md font-semibold transition-colors flex-1">Add More Time</button>
+          <button id="completeTaskButton" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors flex-1">Completed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Timer Pop-up -->
+    <div id="activeTimerPopup" class="hidden fixed bottom-24 right-4 bg-zinc-700/90 backdrop-blur-sm border border-zinc-600 rounded-lg p-3 shadow-lg w-48 text-sm z-30 transition-opacity duration-300">
+      <p id="popupTaskName" class="text-zinc-300 font-semibold truncate"></p>
+      <p id="popupTimeLeft" class="text-amber-400 font-mono text-2xl tabular-nums"></p>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="taskCompleteSound" src="https://cdn.jsdelivr.net/npm/ion-sound@3.0.7/sounds/snap.mp3" preload="auto"></audio>
+    <audio id="timerFinishedSound" src="https://cdn.jsdelivr.net/npm/ion-sound@3.0.7/sounds/bell_ring.mp3" preload="auto"></audio>
+  </div>
 
 
   <script type="module" src="index.tsx"></script>

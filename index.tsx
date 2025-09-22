@@ -3,6 +3,12 @@ import { GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from "https:/
 declare var Tesseract: any;
 declare var marked: any;
 
+// App Containers
+const landingPage = document.getElementById('landing-page') as HTMLElement;
+const getStartedBtn = document.getElementById('get-started-btn') as HTMLButtonElement;
+const appContainer = document.getElementById('app-container') as HTMLElement;
+
+// Main App Elements
 const chatContainer = document.getElementById('chat-container') as HTMLElement;
 const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
 const sendButton = document.getElementById('send-button') as HTMLButtonElement;
@@ -652,6 +658,20 @@ const updateSendButtonState = () => {
 };
 
 // --- Event Listeners ---
+
+const showApp = () => {
+    landingPage.style.opacity = '0';
+    setTimeout(() => {
+        landingPage.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        setTimeout(() => {
+            appContainer.style.opacity = '1';
+        }, 50); // Small delay to ensure the 'hidden' class is removed before transition starts
+    }, 700); // Match the transition duration in CSS
+};
+
+getStartedBtn.addEventListener('click', showApp);
+
 sendButton.addEventListener('click', handleSendMessage);
 messageInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
