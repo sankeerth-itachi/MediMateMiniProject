@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from "https://esm.run/@google/genai";
 
 declare var Tesseract: any;
@@ -17,6 +16,7 @@ const startWithContextButton = document.getElementById('startWithContextButton')
 const loadingOverlay = document.getElementById('loadingOverlay') as HTMLElement;
 const visualizeButton = document.getElementById('visualize-button') as HTMLButtonElement;
 const fetchButton = document.getElementById('fetch-button') as HTMLButtonElement;
+const designFlowButton = document.getElementById('design-flow-button') as HTMLButtonElement;
 
 // Time Table elements
 const menuButton = document.getElementById('menuButton') as HTMLButtonElement;
@@ -255,35 +255,93 @@ const startNewChat = async (useContext: boolean) => {
   }
 };
 
+const processMarkdown = (text: string): string => {
+    const rawHtml = marked.parse(text);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rawHtml;
+
+    const tables = tempDiv.querySelectorAll('table');
+    tables.forEach(table => {
+        if (table.parentElement?.classList.contains('overflow-x-auto')) {
+            return; // Already wrapped
+        }
+        const wrapper = document.createElement('div');
+        wrapper.className = 'overflow-x-auto border border-zinc-600 rounded-md';
+        table.parentNode?.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+    });
+
+    return tempDiv.innerHTML;
+};
+
 const addMessage = (role: 'user' | 'assistant', content: string, id: string | null = null) => {
   const messageId = id || `msg-${messageCounter++}`;
   const messageWrapper = document.createElement('div');
-  messageWrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+  messageWrapper.className = `w-full flex gap-3 items-end ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+  const userIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>`;
+  const aiIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M11.983 1.904a1 1 0 00-1.966 0l-4 8a1 1 0 00.983 1.435h3.04l-2.02 5.05a1 1 0 001.966.788l4-10a1 1 0 00-.983-1.435h-3.04l2.02-4.846z" /></svg>`;
+  
+  const iconDiv = document.createElement('div');
+  iconDiv.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center';
 
   const messageBubble = document.createElement('div');
   messageBubble.id = messageId;
-  messageBubble.className = `max-w-xl lg:max-w-2xl p-4 rounded-2xl ${role === 'user' ? 'bg-blue-600 text-white rounded-br-lg' : 'bg-zinc-700 text-zinc-200 rounded-bl-lg'}`;
+  messageBubble.className = 'max-w-[90%] sm:max-w-xl lg:max-w-2xl p-4 rounded-2xl';
+
+  if (role === 'user') {
+    iconDiv.innerHTML = userIcon;
+    iconDiv.className += ' bg-blue-600 text-white';
+    messageBubble.className += ' bg-blue-600 text-white rounded-br-lg';
+  } else {
+    iconDiv.innerHTML = aiIcon;
+    iconDiv.className += ' bg-zinc-600 text-zinc-200';
+    messageBubble.className += ' bg-zinc-700 text-zinc-200 rounded-bl-lg';
+  }
 
   const proseDiv = document.createElement('div');
-  proseDiv.className = 'prose prose-invert';
-  proseDiv.innerHTML = content;
-
+  proseDiv.className = 'prose prose-invert break-words';
+  // User content might be markdown, other content (like thinking bubble) is raw HTML
+  proseDiv.innerHTML = role === 'user' ? processMarkdown(content) : content;
+  
   messageBubble.appendChild(proseDiv);
-  messageWrapper.appendChild(messageBubble);
+  
+  if (role === 'user') {
+    messageWrapper.appendChild(messageBubble);
+    messageWrapper.appendChild(iconDiv);
+  } else {
+    messageWrapper.appendChild(iconDiv);
+    messageWrapper.appendChild(messageBubble);
+  }
+
   chatContainer.appendChild(messageWrapper);
   chatContainer.scrollTop = chatContainer.scrollHeight;
   return messageId;
 };
 
-const updateMessage = (messageId: string, newContent: string) => {
+const updateMessage = (messageId: string, content: string, isAlreadyHtml: boolean = false) => {
   const messageBubble = document.getElementById(messageId);
   if (messageBubble) {
     const proseDiv = messageBubble.querySelector('.prose');
     if (proseDiv) {
-        proseDiv.innerHTML = newContent;
+        proseDiv.innerHTML = isAlreadyHtml ? content : processMarkdown(content);
     }
     chatContainer.scrollTop = chatContainer.scrollHeight;
   }
+};
+
+const typeMessage = async (messageId: string, fullText: string) => {
+    const words = fullText.split(' ');
+    let builtText = '';
+    const typingDelay = 35; 
+
+    for (let i = 0; i < words.length; i++) {
+        builtText += (i > 0 ? ' ' : '') + words[i];
+        const cursor = (i < words.length - 1) ? '▋' : '';
+        const processedHtml = processMarkdown(builtText + cursor);
+        updateMessage(messageId, processedHtml, true);
+        await new Promise(resolve => setTimeout(resolve, typingDelay));
+    }
 };
 
 const handleImageUpload = (event: Event) => {
@@ -329,6 +387,7 @@ const handleSendMessage = async () => {
   
   const isVisualizeCommand = userMessage.startsWith('/visualize ');
   const isFetchCommand = userMessage.startsWith('/fetch ');
+  const isDesignFlowCommand = userMessage.startsWith('/designFlow ');
 
   let promptParts: any[] = [];
   let displayContent = userMessage;
@@ -348,6 +407,8 @@ const handleSendMessage = async () => {
       promptParts.push({ text: userMessage.substring(11) });
     } else if (isFetchCommand) {
       promptParts.push({ text: userMessage.substring(7) });
+    } else if (isDesignFlowCommand) {
+      promptParts.push({ text: userMessage.substring(12) });
     }
     else {
       promptParts.push({ text: userMessage });
@@ -371,6 +432,10 @@ const handleSendMessage = async () => {
         await fetchAndDescribe(promptParts[0].text, thinkingId);
         return;
     }
+    if (isDesignFlowCommand) {
+        await generateFlowchart(promptParts[0].text, thinkingId);
+        return;
+    }
 
     const modelConfig: { systemInstruction?: string } = {};
     if (currentSystemInstruction) {
@@ -386,8 +451,14 @@ const handleSendMessage = async () => {
     
     const resultText = response.text;
     chatHistory.push({ role: 'model', parts: [{ text: resultText }] });
-    const formattedResponse = marked.parse(resultText);
-    updateMessage(thinkingId, formattedResponse);
+
+    // Check for tables. If found, render instantly. Otherwise, type it out.
+    const processedHtmlForCheck = processMarkdown(resultText);
+    if (processedHtmlForCheck.includes('<table')) {
+        updateMessage(thinkingId, processedHtmlForCheck, true);
+    } else {
+        await typeMessage(thinkingId, resultText);
+    }
 
   } catch (error: any) {
     console.error("API Error:", error);
@@ -438,7 +509,7 @@ const generateVisualization = async (prompt: string, messageId: string) => {
         }
 
         chatHistory.push({ role: 'model', parts: [{ text: `[Generated Image for: ${prompt}] ${htmlResponse}` }] });
-        updateMessage(messageId, htmlResponse);
+        updateMessage(messageId, htmlResponse, true);
 
     } catch (error: any) {
         console.error("Visualization Generation Error:", error);
@@ -463,7 +534,7 @@ const fetchAndDescribe = async (prompt: string, messageId: string) => {
         
         chatHistory.push({ role: 'model', parts: [{ text: description }] });
         
-        let htmlResponse = marked.parse(description);
+        let htmlResponse = processMarkdown(description);
 
         if (groundingChunks.length > 0) {
             htmlResponse += '<div class="mt-4 pt-2 border-t border-zinc-600 text-sm"><p class="font-semibold mb-1">Sources:</p><ul class="list-disc pl-5">';
@@ -475,11 +546,87 @@ const fetchAndDescribe = async (prompt: string, messageId: string) => {
             htmlResponse += '</ul></div>';
         }
         
-        updateMessage(messageId, htmlResponse);
+        updateMessage(messageId, htmlResponse, true);
 
     } catch (error: any) {
         console.error("Fetch and Describe Error:", error);
         updateMessage(messageId, `Sorry, something went wrong while fetching information. ${error.message}`);
+    }
+};
+
+const generateFlowchart = async (prompt: string, messageId: string) => {
+    try {
+        updateMessage(messageId, `⏳ Researching and designing a flowchart for "${prompt}"...`);
+
+        const flowchartPrompt = `
+            Your task is to create a concise, high-level flowchart about the topic: "${prompt}".
+
+            **Instructions:**
+            1. Use your knowledge and the available search tool to understand the key stages of the topic.
+            2. Generate a high-level flowchart summarizing the process using ONLY HTML and the provided CSS classes.
+            3. Generate a concise, one-paragraph explanation of the topic.
+
+            **CSS Classes Available:**
+            - \`<div class="flowchart-container">\`
+            - \`<div class="flow-node flow-start-end">TEXT</div>\`
+            - \`<div class="flow-node flow-process">TEXT</div>\`
+            - \`<div class="flow-node flow-decision"><span>TEXT</span></div>\`
+            - \`<div class="flow-arrow">...\` (SVG inside)
+            - \`<div class="flow-decision-branches">\`
+            - \`<div class="flow-branch">\`
+            - \`<div class="flow-branch-label">Yes/No</div>\`
+
+            **Final Output Format:**
+            You MUST structure your entire response within a single <final_output> block. Inside it, you MUST provide two tags: <flowchart_html> and <explanation>.
+            - The <flowchart_html> tag must contain ONLY the HTML code for the flowchart.
+            - The <explanation> tag must contain ONLY the text for the one-paragraph explanation.
+            - Do NOT include any other text, markdown, or conversational preamble outside of these tags.
+
+            Example structure:
+            <final_output>
+                <flowchart_html>
+                    <div class="flowchart-container">...</div>
+                </flowchart_html>
+                <explanation>
+                    This is the brief explanation of the topic.
+                </explanation>
+            </final_output>
+        `;
+
+        const flowchartResponse = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: flowchartPrompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+            },
+        });
+
+        const rawResponse = flowchartResponse.text;
+
+        const flowchartMatch = rawResponse.match(/<flowchart_html>([\s\S]*?)<\/flowchart_html>/);
+        const explanationMatch = rawResponse.match(/<explanation>([\s\S]*?)<\/explanation>/);
+
+        if (flowchartMatch && flowchartMatch[1] && explanationMatch && explanationMatch[1]) {
+            const flowchartHtmlContent = flowchartMatch[1].trim();
+            const explanationText = explanationMatch[1].trim();
+            
+            const finalHtml = `
+                ${flowchartHtmlContent}
+                <p class="mt-6 text-sm text-zinc-400">${explanationText}</p>
+            `;
+
+            chatHistory.push({ role: 'model', parts: [{ text: `[Flowchart for: ${prompt}] ${finalHtml}` }] });
+            updateMessage(messageId, finalHtml, true);
+        } else {
+            console.error("Failed to parse flowchart response:", rawResponse);
+            const errorMessage = "Sorry, I couldn't generate the flowchart in the correct format. Please try rephrasing your request.";
+            chatHistory.push({ role: 'model', parts: [{ text: errorMessage }] });
+            updateMessage(messageId, errorMessage);
+        }
+
+    } catch (error: any) {
+        console.error("Flowchart Generation Error:", error);
+        updateMessage(messageId, `Sorry, something went wrong while generating the flowchart. ${error.message}`);
     }
 };
 
@@ -546,6 +693,13 @@ fetchButton.addEventListener('click', () => {
     messageInput.focus();
     updateSendButtonState();
 });
+
+designFlowButton.addEventListener('click', () => {
+    messageInput.value = '/designFlow ';
+    messageInput.focus();
+    updateSendButtonState();
+});
+
 
 // Time Table Listeners
 menuButton.addEventListener('click', (e) => {
