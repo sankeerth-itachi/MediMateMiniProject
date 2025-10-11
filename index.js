@@ -545,6 +545,7 @@ const handleSendMessage = async () => {
 };
 
 const generateVisualization = async (prompt, messageId) => {
+    console.log();
     updateMessage(messageId, "🎨 Generating visualization...");
     try {
         const fullPrompt = `You are a creative visual AI. Generate an image based on the following user request.
@@ -558,7 +559,7 @@ const generateVisualization = async (prompt, messageId) => {
         **User Request:** "${prompt}"`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image-preview',
+            model: 'gemini-2.0-flash-Lite-image-preview',
             contents: { parts: [{ text: fullPrompt }] },
             config: {
                 responseModalities: [Modality.IMAGE, Modality.TEXT],
