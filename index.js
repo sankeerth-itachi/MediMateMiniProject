@@ -559,7 +559,7 @@ const generateVisualization = async (prompt, messageId) => {
         **User Request:** "${prompt}"`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash-Lite-image-preview',
+            model: 'gemini-2.0-flash-lite-image-preview',
             contents: { parts: [{ text: fullPrompt }] },
             config: {
                 responseModalities: [Modality.IMAGE, Modality.TEXT],
